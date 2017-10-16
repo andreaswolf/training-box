@@ -1,0 +1,94 @@
+---
+
+##################################################
+# Apache configuration
+##################################################
+
+apache_listen_port: 80
+apache_remove_default_vhost: True
+
+apache_document_root:
+
+apache_mods_enabled:
+  - rewrite.load
+  - ssl.load
+  - proxy.load
+  - proxy.conf
+  - proxy_fcgi.load
+  - headers.load
+  - macro.load
+  - vhost_alias.load
+
+
+apache_vhosts:
+  -
+    servername: "sab.devbox.a-w.io"
+    documentroot: "/vagrant/htdocs/"
+    extra_parameters: |
+      Alias /typo3 /www/live/htdocs/typo3/
+      Alias /typo3temp /www/live/htdocs/typo3temp/
+      Alias /typo3conf /www/live/htdocs/typo3conf/
+
+      ProxyTimeout 1200
+
+      <FilesMatch \.php$>
+        SetHandler "proxy:unix:/var/run/php-fpm-www.sock|fcgi://sab.devbox.a-w.io/"
+      </FilesMatch>
+
+      # Set some proxy properties (the string "unique-domain-name-string" should match
+      # the one set in the FilesMatch directive.
+      <Proxy fcgi://sab.devbox.a-w.io>
+        ProxySet timeout=1200
+      </Proxy>
+ 
+
+##################################################
+# MySQL configuration
+##################################################
+
+mysql_bind_address: '0.0.0.0'
+
+mysql_root_password: 'root'
+
+mysql_users:
+  - name: training
+    password: training
+    host: '%'
+
+mysql_databases:
+  - name: training_default
+
+
+##################################################
+# PHP configuration
+##################################################
+
+php_enable_php_fpm: true
+
+php__packages: [ 'mysql', 'ldap', 'intl', 'sqlite3', 'mbstring', 'php-xdebug', 'soap', 'xml', 'xsl', 'bz2', 'zip' ]
+
+php__default_pools:
+  - name: 'www-data'
+    user: "www"
+    group: "vagrant"
+    listen: "/var/run/php-fpm-www.sock"
+    listen_owner: "www-data"
+    listen_group: "www-data"
+    pm_process_idle_timeout: 610s
+    request_terminate_timeout: 600
+
+    pm_max_children: 10
+
+    php_admin_values:
+      "xdebug.max_nesting_level": "500"
+      display_errors: On
+      max_execution_time: 240
+      max_input_vars: 1500
+
+      "xdebug.remote_enable": true
+      "xdebug.remote_host": "192.168.33.1"
+      "xdebug.remote_connect_back": 0
+
+      "xdebug.idekey": "PHPSTORM"
+
+...

@@ -1,0 +1,55 @@
+---
+
+# todo check if this makes it still possible to overwrite these defaults in the host configuration;
+# otherwise we need to find a different way to do this
+- name: include os-specific variables
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "../vars/{{ ansible_distribution }}-{{ ansible_distribution_version }}.yml"
+    - "../vars/{{ ansible_distribution }}.yml"
+    - "../vars/{{ ansible_os_family }}.yml"
+    - "../vars/defaults.yml"
+
+- name: install MySQL (RedHat)
+  yum: name={{ item }} state=present
+  with_items:
+    - mariadb-server
+    - mariadb
+    - mytop
+  when: ansible_os_family == 'RedHat'
+
+- name: install MySQL (Debian)
+  apt: name={{ item }} state=present
+  with_items:
+    - mariadb-server
+    - mariadb-client
+    - mytop
+    # required for Ansible
+    - python-mysqldb
+
+# this is already sufficient to get rid of the empty password, we do not need to remove the user with empty password
+- name: set MySQL root password
+  mysql_user: name=root password={{ mysql_root_password }} state=present
+  ignore_errors: yes
+
+- name: install MySQL server configuration file
+  template: src=my.cnf.j2 dest={{ mysql_server_config_file }}
+
+- name: Create MySQL databases
+  mysql_db: >
+    name={{ item.name }} state=present
+    encoding = {{ item.character_set | default(mysql_default_charset) }} collation={{ item.collation | default(mysql_default_collation) }}
+    login_user=root login_password={{ mysql_root_password }}
+  with_items: "{{ mysql_databases }}"
+
+- name: Create MySQL users
+  mysql_user: >
+    name={{ item.name }} password={{ item.password }} state=present
+    priv={{ item.name }}.*:ALL
+    priv={{ item.name }}_%.*:ALL
+    host={{ item.host | default('localhost') }}
+    login_user=root login_password={{ mysql_root_password }}
+  with_items: "{{ mysql_users }}"
+
+
+...

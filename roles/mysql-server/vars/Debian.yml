@@ -1,0 +1,11 @@
+---
+
+mysql_run_directory: '/var/run/mysqld'
+
+mysql_socket: '{{ mysql_run_directory }}/mysqld.sock'
+
+mysql_data_dir: '/var/lib/mysql'
+
+mysql_server_config_file: '/etc/mysql/my.cnf'
+
+...

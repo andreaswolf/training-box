@@ -1,0 +1,8 @@
+---
+
+# webserver roles:
+- src: geerlingguy.apache
+- src: geerlingguy.apache-php-fpm
+- src: debops.php
+
+...

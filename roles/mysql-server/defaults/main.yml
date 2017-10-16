@@ -1,0 +1,14 @@
+---
+
+mysql_admin_user: 'debian-sys-maint'
+
+mysql_admin_password: ''
+
+mysql_default_charset: 'utf8'
+mysql_default_collation: 'utf8_unicode_ci'
+
+mysql_databases: []
+
+mysql_users: []
+
+...

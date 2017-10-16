@@ -1,0 +1,88 @@
+---
+
+- hosts: all
+
+  vars:
+    # TODO define your installations here:
+    environments:
+      #- dev
+      - test
+      #- foo
+
+  pre_tasks:
+    - user: |
+        name=www comment="web server user"
+        uid=1000
+    # TODO  ^^^^  adjust user id to your local user ID here
+
+    - name: Update apt cache.
+      apt: update_cache=yes cache_valid_time=86400
+
+  roles:
+    # https://docs.debops.org/en/latest/ansible/roles/ansible-php/docs/getting-started.html
+    - role: debops.php/env
+
+    - role: mysql-server
+    - role: geerlingguy.apache
+
+    - role: debops.php
+
+  tasks:
+    - name: install additional packages
+      apt: name={{ item }} state=present
+      with_items:
+        - graphicsmagick
+        - imagemagick
+        - git
+        - rsync
+        - zip
+        - unzip
+        - bzip2
+        - screen
+        - multitail
+        - vim
+      tags: ['tools']
+
+    # we need some special magic with Macros in the vHost config, therefore we cannot use the file created by geerlingguy.apache
+    - name: Copy Apache vHosts file
+      copy:
+        src: files/vhosts.conf
+        dest: /etc/apache2/sites-available/vhosts.conf
+        owner: root
+        mode: 0644
+
+  post_tasks:
+
+    - name: add TYPO3 temporary directories
+      file: path=/var/local/www/{{ item }}/typo3temp state=directory owner=www group=www mode=0777
+      with_items: '{{ environments }}'
+      when: environments
+
+    - name: add local TYPO3 temporary directories
+      file: path=/var/local/www/{{ item }}/typo3temp state=directory owner=www group=www mode=0777
+      with_items: '{{ environments }}'
+      when: environments
+
+    - name: remove old typo3temp/ directories
+      file:
+        dest: /www/{{ item }}/web/typo3temp
+        state: absent
+      with_items: '{{ environments }}'
+      when: environments
+
+    - name: change typo3temp/ directories to symlinks inside box
+      file:
+        state: link
+        src: /var/local/www/{{ item }}/typo3temp
+        dest: /www/{{ item }}/web/typo3temp
+      with_items: '{{ environments }}'
+      when: environments
+
+    - name: download and install Composer
+      get_url:
+        url: https://getcomposer.org/download/1.5.2/composer.phar
+        dest: /usr/local/bin/composer
+        mode: 0755
+        # TODO validate checksum!
+
+...
